@@ -37,6 +37,8 @@ $ sudo pip install 'numpy>=1.15'
    - whether to preview images
    - amount sets of images desired.
 4. Run script, created files will be saved to "createdImages" folder.
+![Example 1](dc1.png?raw=true "Example 1")
+![Example 2](dc2.png?raw=true "Example 2")
 
 ### For datasetAugmentor:
 1. Open script to modify:
@@ -45,3 +47,5 @@ $ sudo pip install 'numpy>=1.15'
    - To view n preview images
    - The sequential of augmentations you wish to apply. Some augmentations are heavy and will sometimes, combined with too many other things, cause this script to be unable to finish. Usually this is not the case, but please be aware of this. Do not go too crazy with the amount of augmentations at once.
 2. Run script; created files will be saved to "augmented" folder.
+![Example 1](da1.png?raw=true "Example 1")
+![Example 2](da2.png?raw=true "Example 2")
