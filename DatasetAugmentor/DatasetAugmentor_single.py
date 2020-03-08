@@ -39,19 +39,11 @@ def convert_from_yolo(l_center_x,l_center_y,l_bbWidth,l_bbHeight,l_width,l_heigh
     l_abs_y2 = (l_center_y - l_bbHeight/2)*l_height
     return l_abs_x1,l_abs_x2,l_abs_y1,l_abs_y2
 
-#----------------------------------------------------------
-#(PRE)CONDITIONS FOR (SUCCESSFUL) USE:
-# - you have .jpg files containing one labeled object per image.
-# - labels are formatted in the standard YOLOv3 format, being: bb_class   bb_x_center   bb_y_center   bb_width   bb_height
-# - you have not gone too crazy with the amount of augmenters at once
-# - your paths are correct
-#-----------------------------------------------------------
-
 #PATH TO ORIGINAL IMAGES WITH LABELS#
 filepathOriginalFolder = "/home/silje/Documents/gitRepos/DatasetCreator/DatasetCreator/createdImages/" #script_dir + "/original/"
 
 #AUGMENTED BATCH NAME AND DESIRED MULTIPLE OF ORIGINAL IMAGES#
-batchName = "testBatch2_"
+batchName = "testBatch3_"
 desiredMultiple = 1
 
 #PREVIEW N AMOUNT OF BOUNDING BOXES ON AUGMENTED IMAGES#
@@ -65,8 +57,8 @@ seq = iaa.Sequential([
     #iaa.PiecewiseAffine(scale=(0.01,0.05)), #sometimes moves pieces of image around (RAM-heavy)
     #iaa.LogContrast((0.5,1.0),True), #overlay color
     #iaa.MotionBlur(20,(0,288),1,0), #motion blur for realism
-    #iaa.BlendAlpha((0.0, 1.0), 
-    #iaa.MedianBlur(11), per_channel=True), #alpha-blending with median blur
+    iaa.BlendAlpha((0.0, 1.0), 
+    iaa.MedianBlur(11), per_channel=True), #alpha-blending with median blur
     iaa.PerspectiveTransform(scale=(0.1, 0.1)),
     iaa.AdditiveGaussianNoise(scale=0.05*255, per_channel=True), #noise
     #iaa.CoarseDropout(p=0.1, size_percent=0.005), #blocks removed from image
