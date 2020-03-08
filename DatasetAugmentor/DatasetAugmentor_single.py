@@ -78,9 +78,8 @@ seq = iaa.Sequential([
 class DatasetAugmentor:
     def __init__(self):
         script_dir = os.path.dirname(os.path.abspath(__file__))
-        filepath_img = script_dir + "/augmented/" + batchName + "%d.jpg" #
-        filepath_txt = script_dir + "/augmented/" + batchName + "%d.txt" #
-        self.save_path = script_dir + "/augmented/"
+        self.filepath_img = script_dir + "/augmented/" + batchName + "%d.jpg" #
+        self.filepath_txt = script_dir + "/augmented/" + batchName + "%d.txt" #
 
         self.imagesToAugment = []
         self.bbs_images = []
@@ -97,7 +96,7 @@ class DatasetAugmentor:
 
         self.sequential = seq
 
-    def loadBoundingBoxes(self, imageList, labelList):
+    def loadBoundingBoxes(self, imageList, labelList, imagesToAugment):
 
         for i in range(len(imageList)):
 
@@ -106,12 +105,12 @@ class DatasetAugmentor:
             for u in range(len(contentsOfFile)):
                 contentsOfFile[u] = float(contentsOfFile[u])
 
-            image_height, image_width = imageList[i].shape[:2]
+            image_height, image_width = imagesToAugment[i].shape[:2]
 
             abs_x1,abs_x2,abs_y1,abs_y2 = convert_from_yolo(contentsOfFile[1],contentsOfFile[2],contentsOfFile[3],contentsOfFile[4],image_width,image_height)
 
             bb = BoundingBox(x1=abs_x1, x2=abs_x2, y1=abs_y1, y2=abs_y2, label = int(contentsOfFile[0]))
-            bboi = BoundingBoxesOnImage([bb], shape=imageList[i].shape)
+            bboi = BoundingBoxesOnImage([bb], shape=imagesToAugment[i].shape)
             self.bbs_images.append(bboi)
 
             f.close()
@@ -126,7 +125,7 @@ class DatasetAugmentor:
         bbs_images = bbs_images*desiredMultiple
     
     def augmentImages(self,imagesToAugment,bbs_images):
-        self.images_aug, self.bbs_aug = seq(images=imagesToAugment, bounding_boxes=bbs_images)
+        self.augmentedImages, self.augmented_bbs = self.sequential(images=imagesToAugment, bounding_boxes=bbs_images)
 
     def saturateBoundingBoxes(self, augmentedImages, augmented_bbs):
         for i, image in enumerate(augmentedImages):
@@ -142,7 +141,7 @@ class DatasetAugmentor:
         for i in range(viewNBoundingBoxes):
             ia.imshow(bbs_aug[i].draw_on_image(images_aug[i], size=5))
 
-    def saveImagesAndLabels(self,images_aug,bbs_aug):
+    def saveImagesAndLabels(self,images_aug,bbs_aug, filepath_img, filepath_txt):
         for i, image_aug in enumerate(images_aug):
             f=open(filepath_txt % i,"w")
 
@@ -160,7 +159,7 @@ class DatasetAugmentor:
     def createAugmentedSet(self):
 
         self.readAndAppendImages(self.imageList)
-        self.loadBoundingBoxes(self.imageList, self.labelList)
+        self.loadBoundingBoxes(self.imageList, self.labelList, self.imagesToAugment)
         self.createMultipleBatches(self.imagesToAugment,self.bbs_images)
         self.augmentImages(self.imagesToAugment,self.bbs_images)
         self.saturateBoundingBoxes(self.augmentedImages,self.augmented_bbs)
@@ -168,7 +167,7 @@ class DatasetAugmentor:
         if (viewNBoundingBoxes > 0):
             self.viewPreviewImages(self.augmentedImages,self.augmented_bbs)
 
-        self.saveImagesAndLabels(self.augmentedImages,self.augmented_bbs)
+        self.saveImagesAndLabels(self.augmentedImages,self.augmented_bbs, self.filepath_img, self.filepath_txt)
 
 
 augment = DatasetAugmentor()
