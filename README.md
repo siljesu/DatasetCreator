@@ -1,10 +1,10 @@
 # DatasetCreator
-This repository contains two scripts for dataset creation and augmentation. These are in two different scripts.
+This repository contains two scripts for dataset creation and augmentation, with automatic labeling in the YOLOv3 format. There are two different scripts, one for dataset creation, which pastes a randomly resized and randomly placed image into  backgrounds and saves the result, and one for dataset augmentations, which applies a range of augmentations on a specified set of images and saves the result.
 
 ## INSTALLATION
 1. Clone repository into desired directory:
 ```console
-$ git clone <url>
+$ git clone https://github.com/siljesu/DatasetCreator.git
 ```
 2. Install following requirements:
 six,
@@ -22,9 +22,9 @@ pathlib,
 ```console
 $ sudo pip install six numpy scipy Pillow matplotlib scikit-image opencv-python-headless imageio Shapely glob pathlib
 ```
-if your versions are not correct, fix this by explicitly specifying the version:
+if your versions are not correct, fix this by explicitly specifying the version and forcing install:
 ```console
-$ sudo pip install 'numpy>=1.15'
+$ sudo pip install --force-reinstall 'numpy>=1.15'
 ```
 
 ## USAGE
@@ -36,7 +36,7 @@ $ sudo pip install 'numpy>=1.15'
    - scaling parameters. These specify the largest and smallest random scaling of target image allowed.
    - whether to preview images
    - amount sets of images desired.
-4. Run script, created files will be saved to "createdImages" folder.
+4. Run script, created files, including label files, will be saved to "createdImages" folder.
 
 
 <img src="dc1.png" width=400><img src="dc2.png" width=400>
