@@ -39,117 +39,137 @@ def convert_from_yolo(l_center_x,l_center_y,l_bbWidth,l_bbHeight,l_width,l_heigh
     l_abs_y2 = (l_center_y - l_bbHeight/2)*l_height
     return l_abs_x1,l_abs_x2,l_abs_y1,l_abs_y2
 
-
-script_dir = os.path.dirname(os.path.abspath(__file__))
-
-#----------------------------------------------------------
-#(PRE)CONDITIONS FOR (SUCCESSFUL) USE:
-# - you have .jpg files containing one labeled object per image.
-# - labels are formatted in the standard YOLOv3 format, being: bb_class   bb_x_center   bb_y_center   bb_width   bb_height
-# - you have not gone too crazy with the amount of augmenters at once
-# - your paths are correct
-#-----------------------------------------------------------
-
 #PATH TO ORIGINAL IMAGES WITH LABELS#
-filepathOriginalFolder = script_dir + "/original/"
+filepathOriginalFolder = "/home/silje/Documents/gitRepos/DatasetCreator/DatasetCreator/createdImages/med-gman-i-gate/" #script_dir + "/original/"
 
 #AUGMENTED BATCH NAME AND DESIRED MULTIPLE OF ORIGINAL IMAGES#
-batchName = "batch5_"
+batchName = "batch1_"
 desiredMultiple = 1
 
 #PREVIEW N AMOUNT OF BOUNDING BOXES ON AUGMENTED IMAGES#
 viewNBoundingBoxes = 0
 
-#SAVE AUGMENTED IMAGES WITH BOUNDING BOX TO FILEPATH#
-filepathSaveFolder = script_dir + "/augmented/"
-
-filepath_img = filepathSaveFolder + batchName + "%d.jpg"
-filepath_txt = filepathSaveFolder + batchName + "%d.txt"
-
 #DESIRED AUGMENTATION# 
 seq = iaa.Sequential([
     #iaa.AddToHue((-255,255)),  # change their color
-    #iaa.MultiplySaturation((0.1,0.7)), #calm down color
+    iaa.MultiplySaturation((0.1,0.7)), #calm down color
     #iaa.ElasticTransformation(alpha=20, sigma=4),  # water-like effect (smaller sigma = smaller "waves")
     #iaa.PiecewiseAffine(scale=(0.01,0.05)), #sometimes moves pieces of image around (RAM-heavy)
-    iaa.LogContrast((0.5,1.0),True), #overlay color
+    #iaa.LogContrast((0.5,1.0),True), #overlay color
     #iaa.MotionBlur(20,(0,288),1,0), #motion blur for realism
-    iaa.Alpha((0.0, 1.0), 
-    iaa.MedianBlur(11), per_channel=True), #alpha-blending with median blur
+    #iaa.BlendAlpha((0.0, 1.0), 
+    #iaa.MedianBlur(11), per_channel=True), #alpha-blending with median blur
     iaa.PerspectiveTransform(scale=(0.1, 0.1)),
     iaa.AdditiveGaussianNoise(scale=0.05*255, per_channel=True), #noise
     iaa.CoarseDropout(p=0.1, size_percent=0.005), #blocks removed from image
-    iaa.Affine(rotate=(-15,15)) #rotate #PROBLEM WITH BOUNDING BOXES MOSTLY CAUSED BY THIS
+    iaa.Affine(rotate=(-5,5)) #rotate #PROBLEM WITH BOUNDING BOXES MOSTLY CAUSED BY THIS
 ], random_order=True)
 
 #---------------------------------------------------------------------
 
-imagesToAugment = []
-bbs_images = []
+class DatasetAugmentor:
+    def __init__(self):
+        script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.filepath_img = script_dir + "/augmented/" + batchName + "%d.jpg" #
+        self.filepath_txt = script_dir + "/augmented/" + batchName + "%d.txt" #
 
-filepathOriginalImagesList = glob.glob(filepathOriginalFolder+"*.jpg")
-filepathOriginalImagesList.sort()
-filepathOriginalLabelsList = glob.glob(filepathOriginalFolder+"*.txt")
-filepathOriginalLabelsList.sort()
+        self.imagesToAugment = []
+        self.bbs_images = []
+        self.augmentedImages = []
+        self.augmented_bbs = []
 
-# create bounding boxes on images
-for i in range(len(filepathOriginalImagesList)):
-    img = imageio.imread(filepathOriginalImagesList[i])
-    imagesToAugment.append(img)
+        originalImagesList = glob.glob(filepathOriginalFolder+"*.jpg")
+        originalImagesList.sort()
+        self.imageList = originalImagesList
 
-    f = open(filepathOriginalLabelsList[i], "r")
-    contentsOfFile =f.readlines()
-    for u in range(len(contentsOfFile)):
-        contentsOfFile[u] = contentsOfFile[u].split()
-        for j in range(len(contentsOfFile[u])):
-            contentsOfFile[u][j] = float(contentsOfFile[u][j])
+        originalLabelsList = glob.glob(filepathOriginalFolder+"*.txt")
+        originalLabelsList.sort()
+        self.labelList = originalLabelsList
 
-    image_height, image_width = img.shape[:2]
+        self.sequential = seq
 
-    boundingBoxes = []
-    for u in range (len(contentsOfFile)):
-        abs_x1,abs_x2,abs_y1,abs_y2 = convert_from_yolo(contentsOfFile[u][1],contentsOfFile[u][2],contentsOfFile[u][3],contentsOfFile[u][4],image_width,image_height)
-        bb = BoundingBox(x1=abs_x1, x2=abs_x2, y1=abs_y1, y2=abs_y2, label = int(contentsOfFile[u][0]))
-        boundingBoxes.append(bb)
-        
-    bboi = BoundingBoxesOnImage(boundingBoxes, shape=img.shape)
-    bbs_images.append(bboi)
+    def loadBoundingBoxes(self, imageList, labelList, imagesToAugment):
 
-    f.close()
+        for i in range(len(imageList)):
 
-imagesToAugment= imagesToAugment*desiredMultiple
-bbs_images = bbs_images*desiredMultiple
+            f = open(labelList[i], "r")
+            contentsOfFile = f.readlines()
+            for u in range(len(contentsOfFile)):
+                contentsOfFile[u] = contentsOfFile[u].split()
+                for j in range(len(contentsOfFile[u])):
+                    contentsOfFile[u][j] = float(contentsOfFile[u][j])
 
-images_aug, bbs_aug = seq(images=imagesToAugment, bounding_boxes=bbs_images)
+            image_height, image_width = imagesToAugment[i].shape[:2]
 
-#check if bounding box is fully within augmented image
-for i, image_aug in enumerate(images_aug):
-    heightImage, widthImage = image_aug.shape[:2]
-    widthImage = float(widthImage)
-    heightImage = float(heightImage)
-    for u in range(len(bbs_aug[i].bounding_boxes)):
-        bb_info = bbs_aug[i].bounding_boxes[u]
-        if (not bb_info.is_fully_within_image(image_aug)):
-            abs_x1,abs_y1,abs_x2,abs_y2 = saturate_bbs(bb_info.x1_int,bb_info.y1_int,bb_info.x2_int,bb_info.y2_int,widthImage,heightImage)
-            bbs_aug[i].bounding_boxes[u] = BoundingBox(x1=abs_x1, x2=abs_x2, y1=abs_y1, y2=abs_y2, label = bb_info.label)
+            boundingBoxes = []
+            for u in range (len(contentsOfFile)):
+                abs_x1,abs_x2,abs_y1,abs_y2 = convert_from_yolo(contentsOfFile[u][1],contentsOfFile[u][2],contentsOfFile[u][3],contentsOfFile[u][4],image_width,image_height)
+                bb = BoundingBox(x1=abs_x1, x2=abs_x2, y1=abs_y1, y2=abs_y2, label = int(contentsOfFile[u][0]))
+                boundingBoxes.append(bb)
 
+            bboi = BoundingBoxesOnImage(boundingBoxes, shape=imagesToAugment[i].shape)
+            self.bbs_images.append(bboi)
 
-if (viewNBoundingBoxes > 0):
-    for i in range(viewNBoundingBoxes):
-        ia.imshow(bbs_aug[i].draw_on_image(images_aug[i], size=5))
+            f.close()
 
-#write to file, save image
-for i, image_aug in enumerate(images_aug):
-    f=open(filepath_txt % i,"w")
+    def readAndAppendImages(self, originalImageList):
+        for i in range(len(originalImageList)):
+            img = imageio.imread(originalImageList[i])
+            self.imagesToAugment.append(img)
 
-    heightImage, widthImage = image_aug.shape[:2]
-    widthImage = float(widthImage)
-    heightImage = float(heightImage)
-
-    for u in range(len(bbs_aug[i].bounding_boxes)):
-        bb_info = bbs_aug[i].bounding_boxes[u]
-        center_x,center_y,bbWidth,bbHeight = convert_to_yolo(bb_info.x1_int,bb_info.y1_int,bb_info.x2_int,bb_info.y2_int,widthImage,heightImage)
-        f.write(str(bb_info.label) + ' ' + str(round(center_x,6)) + ' ' + str(round(center_y,6)) + ' ' + str(round(float(bbWidth),6)) + ' ' + str(round(float(bbHeight),6)) + '\n')
+    def createMultipleBatches(self,imagesToAugment,bbs_images):
+        imagesToAugment= imagesToAugment*desiredMultiple
+        bbs_images = bbs_images*desiredMultiple
     
-    misc.imsave(filepath_img % i, image_aug)
-    f.close()
+    def augmentImages(self,imagesToAugment,bbs_images):
+        self.augmentedImages, self.augmented_bbs = self.sequential(images=imagesToAugment, bounding_boxes=bbs_images)
+
+    def saturateBoundingBoxes(self, augmentedImages, augmented_bbs):
+        for i, image in enumerate(augmentedImages):
+            heightImage, widthImage = image.shape[:2]
+            widthImage = float(widthImage)
+            heightImage = float(heightImage)
+            for u in range(len(augmented_bbs[i].bounding_boxes)):
+                bb_info = augmented_bbs[i].bounding_boxes[u]
+                if (not bb_info.is_fully_within_image(image)):
+                    abs_x1,abs_y1,abs_x2,abs_y2 = saturate_bbs(bb_info.x1_int,bb_info.y1_int,bb_info.x2_int,bb_info.y2_int,widthImage,heightImage)
+                    augmented_bbs[i].bounding_boxes[u] = BoundingBox(x1=abs_x1, x2=abs_x2, y1=abs_y1, y2=abs_y2, label = bb_info.label)
+
+    def viewPreviewImages(self,images_aug,bbs_aug):
+        for i in range(viewNBoundingBoxes):
+            ia.imshow(bbs_aug[i].draw_on_image(images_aug[i], size=5))
+
+    def saveImagesAndLabels(self,images_aug,bbs_aug, filepath_img, filepath_txt):
+        for i, image_aug in enumerate(images_aug):
+            f=open(filepath_txt % i,"w")
+
+            heightImage, widthImage = image_aug.shape[:2]
+            widthImage = float(widthImage)
+            heightImage = float(heightImage)
+
+            for u in range(len(bbs_aug[i].bounding_boxes)):
+                bb_info = bbs_aug[i].bounding_boxes[u]
+                center_x,center_y,bbWidth,bbHeight = convert_to_yolo(bb_info.x1_int,bb_info.y1_int,bb_info.x2_int,bb_info.y2_int,widthImage,heightImage)
+                print(str(bb_info.label) + ' ' + str(round(center_x,6)) + ' ' + str(round(center_y,6)) + ' ' + str(round(float(bbWidth),6)) + ' ' + str(round(float(bbHeight),6)) + '\n')
+                f.write(str(bb_info.label) + ' ' + str(round(center_x,6)) + ' ' + str(round(center_y,6)) + ' ' + str(round(float(bbWidth),6)) + ' ' + str(round(float(bbHeight),6)) + '\n')
+                
+            misc.imsave(filepath_img % i, image_aug)
+            f.close()
+
+    def createAugmentedSet(self):
+
+        self.readAndAppendImages(self.imageList)
+        self.loadBoundingBoxes(self.imageList, self.labelList, self.imagesToAugment)
+        self.createMultipleBatches(self.imagesToAugment,self.bbs_images)
+        self.augmentImages(self.imagesToAugment,self.bbs_images)
+        self.saturateBoundingBoxes(self.augmentedImages,self.augmented_bbs)
+        
+        if (viewNBoundingBoxes > 0):
+            self.viewPreviewImages(self.augmentedImages,self.augmented_bbs)
+
+        self.saveImagesAndLabels(self.augmentedImages,self.augmented_bbs, self.filepath_img, self.filepath_txt)
+
+
+augment = DatasetAugmentor()
+augment.createAugmentedSet()
+

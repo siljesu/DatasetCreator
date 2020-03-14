@@ -6,20 +6,15 @@ import glob
 from pathlib import Path
 from matplotlib import pyplot as plt
 
-# CONDITIONS FOR USE:
-# - all pictures in pictures folder are .png images, names with their corresponding label as the first character in the filename. Example: 0.png, 0 (copy).png, 00.png will all have the same class 0.
-# - pictures in backgrounds folder are .jpg and larger than all the .png images
-# - change parameters marked with "////"
-
 #//// change lowest and highest scaling of image
 LOWEST_SCALE = 0.05
-HIGHEST_SCALE = 1.0
+HIGHEST_SCALE = 0.5
 
 #//// View images?
 VIEW_PREVIEW_IMAGES = False
 
 #//// change amount of sets desired
-TOTAL_SET_NUMBER = 2
+TOTAL_SET_NUMBER = 1
 
 
 class DatasetCreator:
