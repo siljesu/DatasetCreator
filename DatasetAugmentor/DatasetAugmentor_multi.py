@@ -43,14 +43,14 @@ def convert_from_yolo(l_center_x,l_center_y,l_bbWidth,l_bbHeight,l_width,l_heigh
 filepathOriginalFolder = "/home/silje/Documents/gitRepos/DatasetCreator/DatasetCreator/createdImages/others/" #script_dir + "/original/"
 
 #AUGMENTED BATCH NAME AND DESIRED MULTIPLE OF ORIGINAL IMAGES#
-batchName = "batch18_other_"
+batchName = "other" # batchN_*yourname*_*number*
 desiredMultiple = 5
 
 #PREVIEW N AMOUNT OF BOUNDING BOXES ON AUGMENTED IMAGES#
 viewNBoundingBoxes = 0
 
 #DESIRED AUGMENTATION# 
-seq = iaa.Sequential([
+seq1 = iaa.Sequential([
     #iaa.AddToHue((-50,50)),  # change their color
     #iaa.MultiplySaturation((0.2,1.5)), #calm down color
     #iaa.ElasticTransformation(alpha=10, sigma=6),  # water-like effect (smaller sigma = smaller "waves")
@@ -66,13 +66,47 @@ seq = iaa.Sequential([
     #iaa.Fliplr(0.5)
 ], random_order=True)
 
+seq2 = iaa.Sequential([
+    #iaa.AddToHue((-50,50)),  # change their color
+    #iaa.MultiplySaturation((0.2,1.5)), #calm down color
+    #iaa.ElasticTransformation(alpha=10, sigma=6),  # water-like effect (smaller sigma = smaller "waves")
+    #iaa.PiecewiseAffine(scale=(0.01,0.05)), #sometimes moves pieces of image around (RAM-heavy)
+    iaa.LogContrast((0.5,1.0),True), #overlay color
+    #iaa.MotionBlur(20,(0,288),1,0), #motion blur for realism
+    #iaa.BlendAlpha((0.1, 0.7), 
+    #iaa.MedianBlur(11), per_channel=True), #alpha-blending with median blur
+    #iaa.PerspectiveTransform(scale=(0.01, 0.1)),
+    #iaa.AdditiveGaussianNoise(scale=0.05*255, per_channel=True), #noise
+    #iaa.CoarseDropout(p=0.1, size_percent=0.005), #blocks removed from image
+    #iaa.Affine(rotate=(-30,30)), #rotate #PROBLEM WITH BOUNDING BOXES MOSTLY CAUSED BY THIS
+    #iaa.Fliplr(0.5)
+], random_order=True)
+
+seq3 = iaa.Sequential([
+    #iaa.AddToHue((-50,50)),  # change their color
+    #iaa.MultiplySaturation((0.2,1.5)), #calm down color
+    #iaa.ElasticTransformation(alpha=10, sigma=6),  # water-like effect (smaller sigma = smaller "waves")
+    #iaa.PiecewiseAffine(scale=(0.01,0.05)), #sometimes moves pieces of image around (RAM-heavy)
+    #iaa.LogContrast((0.5,1.0),True), #overlay color
+    #iaa.MotionBlur(20,(0,288),1,0), #motion blur for realism
+    #iaa.BlendAlpha((0.1, 0.7), 
+    #iaa.MedianBlur(11), per_channel=True), #alpha-blending with median blur
+    #iaa.PerspectiveTransform(scale=(0.01, 0.1)),
+    #iaa.AdditiveGaussianNoise(scale=0.05*255, per_channel=True), #noise
+    #iaa.CoarseDropout(p=0.1, size_percent=0.005), #blocks removed from image
+    iaa.Affine(rotate=(-30,30)), #rotate #PROBLEM WITH BOUNDING BOXES MOSTLY CAUSED BY THIS
+    #iaa.Fliplr(0.5)
+], random_order=True)
+
+#seqList = [seq1,seq2,seq3,seq4,seq5,seq6,seq7,seq8,seq9,seq10,seq11,seq12,seq13,seq14,seq15]
+seqList = [seq1,seq2,seq3]
 #---------------------------------------------------------------------
 
 class DatasetAugmentor:
     def __init__(self):
-        script_dir = os.path.dirname(os.path.abspath(__file__))
-        self.filepath_img = script_dir + "/augmented/" + batchName + "%d.jpg" #
-        self.filepath_txt = script_dir + "/augmented/" + batchName + "%d.txt" #
+        self.script_dir = os.path.dirname(os.path.abspath(__file__))
+        self.filepath_img = ''
+        self.filepath_txt = ''
 
         self.imagesToAugment = []
         self.bbs_images = []
@@ -87,7 +121,7 @@ class DatasetAugmentor:
         originalLabelsList.sort()
         self.labelList = originalLabelsList
 
-        self.sequential = seq
+        self.sequentialList = seqList
 
     def loadBoundingBoxes(self, imageList, labelList, imagesToAugment):
 
@@ -122,8 +156,8 @@ class DatasetAugmentor:
         self.imagesToAugment= imagesToAugment*desiredMultiple
         self.bbs_images = bbs_images*desiredMultiple
     
-    def augmentImages(self,imagesToAugment,bbs_images):
-        self.augmentedImages, self.augmented_bbs = self.sequential(images=imagesToAugment, bounding_boxes=bbs_images)
+    def augmentImages(self,imagesToAugment,bbs_images, seq_n):
+        self.augmentedImages, self.augmented_bbs = self.sequentialList[seq_n](images=imagesToAugment, bounding_boxes=bbs_images)
 
     def saturateBoundingBoxes(self, augmentedImages, augmented_bbs):
         for i, image in enumerate(augmentedImages):
@@ -161,13 +195,19 @@ class DatasetAugmentor:
         self.readAndAppendImages(self.imageList)
         self.loadBoundingBoxes(self.imageList, self.labelList, self.imagesToAugment)
         self.createMultipleBatches(self.imagesToAugment,self.bbs_images)
-        self.augmentImages(self.imagesToAugment,self.bbs_images)
-        self.saturateBoundingBoxes(self.augmentedImages,self.augmented_bbs)
         
-        if (viewNBoundingBoxes > 0):
-            self.viewPreviewImages(self.augmentedImages,self.augmented_bbs)
+        for seq_n in range(len(self.sequentialList)):
 
-        self.saveImagesAndLabels(self.augmentedImages,self.augmented_bbs, self.filepath_img, self.filepath_txt)
+            self.filepath_img = self.script_dir + "/augmented/batch" + str(seq_n) + "_" + batchName + "_" + "%d.jpg"
+            self.filepath_txt = self.script_dir + "/augmented/batch" + str(seq_n) + "_" + batchName + "_" + "%d.txt"
+
+            self.augmentImages(self.imagesToAugment,self.bbs_images, seq_n)
+            self.saturateBoundingBoxes(self.augmentedImages,self.augmented_bbs)
+            
+            if (viewNBoundingBoxes > 0):
+                self.viewPreviewImages(self.augmentedImages,self.augmented_bbs)
+
+            self.saveImagesAndLabels(self.augmentedImages,self.augmented_bbs, self.filepath_img, self.filepath_txt)
 
 
 augment = DatasetAugmentor()
