@@ -40,29 +40,30 @@ def convert_from_yolo(l_center_x,l_center_y,l_bbWidth,l_bbHeight,l_width,l_heigh
     return l_abs_x1,l_abs_x2,l_abs_y1,l_abs_y2
 
 #PATH TO ORIGINAL IMAGES WITH LABELS#
-filepathOriginalFolder = "/home/silje/Documents/gitRepos/DatasetCreator/DatasetCreator/createdImages/med-gman-i-gate/" #script_dir + "/original/"
+filepathOriginalFolder = "/home/silje/Documents/gitRepos/DatasetCreator/DatasetCreator/createdImages/others/" #script_dir + "/original/"
 
 #AUGMENTED BATCH NAME AND DESIRED MULTIPLE OF ORIGINAL IMAGES#
-batchName = "batch1_"
-desiredMultiple = 1
+batchName = "batch18_other_"
+desiredMultiple = 5
 
 #PREVIEW N AMOUNT OF BOUNDING BOXES ON AUGMENTED IMAGES#
 viewNBoundingBoxes = 0
 
 #DESIRED AUGMENTATION# 
 seq = iaa.Sequential([
-    #iaa.AddToHue((-255,255)),  # change their color
-    iaa.MultiplySaturation((0.1,0.7)), #calm down color
-    #iaa.ElasticTransformation(alpha=20, sigma=4),  # water-like effect (smaller sigma = smaller "waves")
+    #iaa.AddToHue((-50,50)),  # change their color
+    #iaa.MultiplySaturation((0.2,1.5)), #calm down color
+    #iaa.ElasticTransformation(alpha=10, sigma=6),  # water-like effect (smaller sigma = smaller "waves")
     #iaa.PiecewiseAffine(scale=(0.01,0.05)), #sometimes moves pieces of image around (RAM-heavy)
     #iaa.LogContrast((0.5,1.0),True), #overlay color
     #iaa.MotionBlur(20,(0,288),1,0), #motion blur for realism
-    #iaa.BlendAlpha((0.0, 1.0), 
+    #iaa.BlendAlpha((0.1, 0.7), 
     #iaa.MedianBlur(11), per_channel=True), #alpha-blending with median blur
-    iaa.PerspectiveTransform(scale=(0.1, 0.1)),
+    #iaa.PerspectiveTransform(scale=(0.01, 0.1)),
     iaa.AdditiveGaussianNoise(scale=0.05*255, per_channel=True), #noise
-    iaa.CoarseDropout(p=0.1, size_percent=0.005), #blocks removed from image
-    iaa.Affine(rotate=(-5,5)) #rotate #PROBLEM WITH BOUNDING BOXES MOSTLY CAUSED BY THIS
+    #iaa.CoarseDropout(p=0.1, size_percent=0.005), #blocks removed from image
+    #iaa.Affine(rotate=(-30,30)), #rotate #PROBLEM WITH BOUNDING BOXES MOSTLY CAUSED BY THIS
+    #iaa.Fliplr(0.5)
 ], random_order=True)
 
 #---------------------------------------------------------------------
@@ -118,8 +119,8 @@ class DatasetAugmentor:
             self.imagesToAugment.append(img)
 
     def createMultipleBatches(self,imagesToAugment,bbs_images):
-        imagesToAugment= imagesToAugment*desiredMultiple
-        bbs_images = bbs_images*desiredMultiple
+        self.imagesToAugment= imagesToAugment*desiredMultiple
+        self.bbs_images = bbs_images*desiredMultiple
     
     def augmentImages(self,imagesToAugment,bbs_images):
         self.augmentedImages, self.augmented_bbs = self.sequential(images=imagesToAugment, bounding_boxes=bbs_images)
@@ -150,7 +151,6 @@ class DatasetAugmentor:
             for u in range(len(bbs_aug[i].bounding_boxes)):
                 bb_info = bbs_aug[i].bounding_boxes[u]
                 center_x,center_y,bbWidth,bbHeight = convert_to_yolo(bb_info.x1_int,bb_info.y1_int,bb_info.x2_int,bb_info.y2_int,widthImage,heightImage)
-                print(str(bb_info.label) + ' ' + str(round(center_x,6)) + ' ' + str(round(center_y,6)) + ' ' + str(round(float(bbWidth),6)) + ' ' + str(round(float(bbHeight),6)) + '\n')
                 f.write(str(bb_info.label) + ' ' + str(round(center_x,6)) + ' ' + str(round(center_y,6)) + ' ' + str(round(float(bbWidth),6)) + ' ' + str(round(float(bbHeight),6)) + '\n')
                 
             misc.imsave(filepath_img % i, image_aug)

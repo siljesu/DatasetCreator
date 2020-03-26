@@ -8,13 +8,13 @@ from matplotlib import pyplot as plt
 
 #//// change lowest and highest scaling of image
 LOWEST_SCALE = 0.05
-HIGHEST_SCALE = 0.5
+HIGHEST_SCALE = 0.8
 
 #//// View images?
 VIEW_PREVIEW_IMAGES = False
 
 #//// change amount of sets desired
-TOTAL_SET_NUMBER = 1
+TOTAL_SET_NUMBER = 2
 
 
 class DatasetCreator:
