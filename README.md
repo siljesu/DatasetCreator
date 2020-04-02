@@ -43,13 +43,22 @@ $ sudo pip install --force-reinstall 'numpy>=1.15'
 
 
 
-### For datasetAugmentor:
+### For datasetAugmentor_single:
 1. Open script to modify:
    - path to images to be augmented, these should contain one labeled object per image, and should be .jpgs with corresponding .txt files. Labels need to be in the YOLOv3 format, which is: bb_class   bb_x_center   bb_y_center   bb_width   bb_height. The output of datasetCreator is already in this format.
    - The batch name and multiples of the original images you want to create.
    - To view n preview images
    - The sequential of augmentations you wish to apply. Some augmentations are heavy and will sometimes, combined with too many other things, cause this script to be unable to finish. Usually this is not the case, but please be aware of this. Do not go too crazy with the amount of augmentations at once.
 2. Run script; created files will be saved to "augmented" folder.
+
+
+### For datasetAugmentor_multiple:
+1. Open script to modify:
+   - path to images to be augmented, these can contain several labeled objects per image, and should be .jpgs with corresponding .txt files. Labels need to be in the YOLOv3 format, which is: bb_class   bb_x_center   bb_y_center   bb_width   bb_height. The output of datasetCreator is already in this format.
+   - The batch name and multiples of the original images you want to create.
+   - To view n preview images
+   - The list of sequentials (augmentations) you wish to apply. Some augmentations are heavy and will sometimes, combined with too many other things, cause this script to be unable to finish. Usually this is not the case, but please be aware of this. Do not go too crazy with the amount of augmentations at once.
+2. Run script; created files will be saved to "augmented" folder, with each sequential numbered as "batch1", "batch2" and so on.
 
 
 <img src="da1.png" width=400><img src="da2.png" width=400>
