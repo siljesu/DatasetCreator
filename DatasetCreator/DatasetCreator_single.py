@@ -7,8 +7,8 @@ from pathlib import Path
 from matplotlib import pyplot as plt
 
 #//// change lowest and highest scaling of image
-LOWEST_SCALE = 0.05
-HIGHEST_SCALE = 0.8
+LOWEST_SCALE = 1.0
+HIGHEST_SCALE = 5.0
 
 #//// View images?
 VIEW_PREVIEW_IMAGES = False

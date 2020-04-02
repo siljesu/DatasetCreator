@@ -5,6 +5,7 @@ import cv2
 import os.path
 from scipy import misc
 import glob
+import time
 from imgaug import augmenters as iaa
 from imgaug.augmentables.bbs import BoundingBox, BoundingBoxesOnImage
 ia.seed(1)
@@ -40,66 +41,51 @@ def convert_from_yolo(l_center_x,l_center_y,l_bbWidth,l_bbHeight,l_width,l_heigh
     return l_abs_x1,l_abs_x2,l_abs_y1,l_abs_y2
 
 #PATH TO ORIGINAL IMAGES WITH LABELS#
-filepathOriginalFolder = "/home/silje/Documents/gitRepos/DatasetCreator/DatasetCreator/createdImages/others/" #script_dir + "/original/"
+filepathOriginalFolder = "/home/silje/Documents/gitRepos/DatasetCreator/DatasetCreator/createdImages/" #script_dir + "/original/"
 
 #AUGMENTED BATCH NAME AND DESIRED MULTIPLE OF ORIGINAL IMAGES#
-batchName = "other" # batchN_*yourname*_*number*
-desiredMultiple = 5
+batchName = "new_batches_" # batchN_*yourname*_*number*
+desiredMultiple = 3
 
 #PREVIEW N AMOUNT OF BOUNDING BOXES ON AUGMENTED IMAGES#
 viewNBoundingBoxes = 0
 
 #DESIRED AUGMENTATION# 
-seq1 = iaa.Sequential([
-    #iaa.AddToHue((-50,50)),  # change their color
-    #iaa.MultiplySaturation((0.2,1.5)), #calm down color
-    #iaa.ElasticTransformation(alpha=10, sigma=6),  # water-like effect (smaller sigma = smaller "waves")
-    #iaa.PiecewiseAffine(scale=(0.01,0.05)), #sometimes moves pieces of image around (RAM-heavy)
-    #iaa.LogContrast((0.5,1.0),True), #overlay color
-    #iaa.MotionBlur(20,(0,288),1,0), #motion blur for realism
-    #iaa.BlendAlpha((0.1, 0.7), 
-    #iaa.MedianBlur(11), per_channel=True), #alpha-blending with median blur
-    #iaa.PerspectiveTransform(scale=(0.01, 0.1)),
+seq0 = iaa.Sequential([
+    iaa.BlendAlpha((0.1, 0.7), 
+    iaa.MedianBlur(11), per_channel=True), #alpha-blending with median blur
     iaa.AdditiveGaussianNoise(scale=0.05*255, per_channel=True), #noise
-    #iaa.CoarseDropout(p=0.1, size_percent=0.005), #blocks removed from image
-    #iaa.Affine(rotate=(-30,30)), #rotate #PROBLEM WITH BOUNDING BOXES MOSTLY CAUSED BY THIS
-    #iaa.Fliplr(0.5)
+    iaa.CoarseDropout(p=0.1, size_percent=0.005), #blocks removed from image
+    iaa.Cutout(nb_iterations=(1, 7), size=(0.05,0.3), squared=False),
+    iaa.LinearContrast((0.01,1.1))
+], random_order=True)
+
+seq1 = iaa.Sequential([
+    iaa.LinearContrast((0.01,0.8)),
+    iaa.Cutout(nb_iterations=(1, 10), size=(0.05,0.3), fill_mode="constant", cval=(0, 255), fill_per_channel=0.5)
 ], random_order=True)
 
 seq2 = iaa.Sequential([
-    #iaa.AddToHue((-50,50)),  # change their color
-    #iaa.MultiplySaturation((0.2,1.5)), #calm down color
-    #iaa.ElasticTransformation(alpha=10, sigma=6),  # water-like effect (smaller sigma = smaller "waves")
-    #iaa.PiecewiseAffine(scale=(0.01,0.05)), #sometimes moves pieces of image around (RAM-heavy)
-    iaa.LogContrast((0.5,1.0),True), #overlay color
-    #iaa.MotionBlur(20,(0,288),1,0), #motion blur for realism
-    #iaa.BlendAlpha((0.1, 0.7), 
-    #iaa.MedianBlur(11), per_channel=True), #alpha-blending with median blur
-    #iaa.PerspectiveTransform(scale=(0.01, 0.1)),
-    #iaa.AdditiveGaussianNoise(scale=0.05*255, per_channel=True), #noise
-    #iaa.CoarseDropout(p=0.1, size_percent=0.005), #blocks removed from image
-    #iaa.Affine(rotate=(-30,30)), #rotate #PROBLEM WITH BOUNDING BOXES MOSTLY CAUSED BY THIS
-    #iaa.Fliplr(0.5)
+    iaa.LinearContrast((0.01,0.8)),
+    iaa.Fog(),
+    iaa.Cutout(nb_iterations=(1, 7), size=(0.05,0.3),cval=255, squared=False)
 ], random_order=True)
 
 seq3 = iaa.Sequential([
-    #iaa.AddToHue((-50,50)),  # change their color
-    #iaa.MultiplySaturation((0.2,1.5)), #calm down color
-    #iaa.ElasticTransformation(alpha=10, sigma=6),  # water-like effect (smaller sigma = smaller "waves")
-    #iaa.PiecewiseAffine(scale=(0.01,0.05)), #sometimes moves pieces of image around (RAM-heavy)
-    #iaa.LogContrast((0.5,1.0),True), #overlay color
-    #iaa.MotionBlur(20,(0,288),1,0), #motion blur for realism
-    #iaa.BlendAlpha((0.1, 0.7), 
-    #iaa.MedianBlur(11), per_channel=True), #alpha-blending with median blur
-    #iaa.PerspectiveTransform(scale=(0.01, 0.1)),
-    #iaa.AdditiveGaussianNoise(scale=0.05*255, per_channel=True), #noise
-    #iaa.CoarseDropout(p=0.1, size_percent=0.005), #blocks removed from image
-    iaa.Affine(rotate=(-30,30)), #rotate #PROBLEM WITH BOUNDING BOXES MOSTLY CAUSED BY THIS
-    #iaa.Fliplr(0.5)
+    iaa.LinearContrast((0.1,0.8)),
+    iaa.BlendAlpha((0.1, 0.7), 
+    iaa.MedianBlur(11), per_channel=True) #alpha-blending with median blur
+], random_order=True)
+
+seq4 = iaa.Sequential([
+    iaa.LinearContrast((0.01,0.8)),
+    iaa.Cutout(nb_iterations=(1, 5), size=(0.05,0.3), fill_mode="constant", cval=255),
+    iaa.BlendAlpha((0.1, 0.7), 
+    iaa.MedianBlur(11), per_channel=True) #alpha-blending with median blur
 ], random_order=True)
 
 #seqList = [seq1,seq2,seq3,seq4,seq5,seq6,seq7,seq8,seq9,seq10,seq11,seq12,seq13,seq14,seq15]
-seqList = [seq1,seq2,seq3]
+seqList = [seq0,seq1,seq2,seq4]
 #---------------------------------------------------------------------
 
 class DatasetAugmentor:
@@ -189,14 +175,19 @@ class DatasetAugmentor:
                 
             misc.imsave(filepath_img % i, image_aug)
             f.close()
+        
 
     def createAugmentedSet(self):
+
+        print("starting...")
 
         self.readAndAppendImages(self.imageList)
         self.loadBoundingBoxes(self.imageList, self.labelList, self.imagesToAugment)
         self.createMultipleBatches(self.imagesToAugment,self.bbs_images)
         
         for seq_n in range(len(self.sequentialList)):
+
+            startTime = time.time()
 
             self.filepath_img = self.script_dir + "/augmented/batch" + str(seq_n) + "_" + batchName + "_" + "%d.jpg"
             self.filepath_txt = self.script_dir + "/augmented/batch" + str(seq_n) + "_" + batchName + "_" + "%d.txt"
@@ -208,6 +199,9 @@ class DatasetAugmentor:
                 self.viewPreviewImages(self.augmentedImages,self.augmented_bbs)
 
             self.saveImagesAndLabels(self.augmentedImages,self.augmented_bbs, self.filepath_img, self.filepath_txt)
+            
+            elapsedTime = time.time() - startTime
+            print("finished with batch " + str(seq_n) + " in " + str(round(elapsedTime,1)) + " seconds")
 
 
 augment = DatasetAugmentor()
