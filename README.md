@@ -60,6 +60,7 @@ $ sudo pip install --force-reinstall 'numpy>=1.15'
    - The list of sequentials (augmentations) you wish to apply. Some augmentations are heavy and will sometimes, combined with too many other things, cause this script to be unable to finish. Usually this is not the case, but please be aware of this. Do not go too crazy with the amount of augmentations at once.
 2. Run script; created files will be saved to "augmented" folder, with each sequential numbered as "batch1", "batch2" and so on.
 
+Note: In this script it is possible to add several sequentials of augmentations; several batches at once. In datasetAugmentor_single, only one sequential is possible with the current code.
 
 <img src="da1.png" width=400><img src="da2.png" width=400>
 
